@@ -37,3 +37,17 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+.Rproj.user
+
+# Data Types
+
+*.zip
+*.pdf
+*.Rproj
+*.xlsx
+*.docx
+#!data/
+data/*
+!data/data.txt
+*.bug
+*.rds

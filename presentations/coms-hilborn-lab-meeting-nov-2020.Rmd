@@ -1,0 +1,259 @@
+---
+title: "Catch Only Models"
+author: "Dan Ovando"
+institute: "Hilborn Lab Meeting"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(here)
+
+options(htmltools.dir.version = FALSE)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, dev = "svg", out.width = "60%", fig.align = "center")
+
+load(here("eval-cmsy-plots.Rdata"))
+
+
+plot_theme <- theme_minimal(base_size = 14)
+
+theme_set(plot_theme)
+
+
+```
+
+
+background-image: url(https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.lifewithdogs.tv%2Fwp-content%2Fuploads%2F2016%2F06%2F6.26.16-Bad-Pun-Husky27.jpg&f=1&nofb=1)
+
+# Catch-Only Models: What's the Catch?
+
+
+---
+
+# What's a Catch-Only Model
+
+.center[*A model that seeks to infer something about stock status using only catch data**]
+
+Catch-only models (COMs) gained popularity to fill two needs 
+  - Estimating MSY in US to satisfy regulatory requirements (e.g. [DB-SRA](https://www.sciencedirect.com/science/article/abs/pii/S0165783611001962))
+  - Turning only global fishery database, FAO captures, into estimates of stock status
+  
+We'll focus on the "stock status" side of COMs here
+
+.footnote[*And usually structural assumptions + life history]
+
+---
+
+# COMS for Stock Status
+
+There is a long history (and rationale) for trying to infer stock status from catch history
+  - Under classical open-access dynamics, a build up, peak, then crash of catch probably means overfished
+
+Early efforts started by looking at things like Catch / max(Catch) etc. 
+
+Since then...
+
+  - Empirical approaches (Costello et al. 2012/2016, Thorson et al. 2012)
+  - Structural / Heuristic approaches (e.g. CMSY, SSCOM)
+  - Ensemble approaches (Anderson et al. Superensemble)
+  
+---
+
+
+# Where's the Information?
+
+Regardless of performance, let's think for a moment about where information comes from in a COM
+
+Just about the most foundational equation in stock assessment is
+
+
+$$q \times biomass = \frac{catch}{effort}$$
+
+Suppose we observe $\frac{catch}{effort}$.
+
+What do we need to assume in order for this to be useful for us as index of abundance?
+
+---
+
+
+# Where's the Information?
+
+Now suppose we just observe catch. 
+
+$$effort \times q \times biomass = catch$$
+What do we need to assume now?
+
+--
+
+We now need to assume that *effort* and *q* are constant if we want to equate catch to biomass.
+
+How likely is that? 
+
+Yes, I know this is obvious, but it's worth remembering! 
+
+.center[**We need some really restrictive assumptions in order for catch ~ biomass**]
+
+
+---
+
+# Where's the information?
+
+This is pretty obvious so far. That's why most COMs add a wrinkle: they try and estimate stock status based off the characteristics of the entire catch history.
+  - catch / max(catch)
+  - catch history shape
+  
+CMSY is one of the most common forms of this
+  - Define priors on *r*, *k*, initial status, intermediate, and final stock status
+  - Apply catch history + pop model to priors
+  - Reject any combinations of parameters that result in biomass < 0
+    - And do some filtering based on the "triangle".... 
+    
+The claim: you have now learned something from stock status
+
+---
+
+# Where's the information
+
+```{r}
+knitr::include_graphics(here("presentations","imgs","cmsy.png"))
+```
+
+
+---
+
+# Where's the Information
+
+How is the prior on recent stock status getting "updated"?
+
+*K* prior clearly matters: If your prior is that B/Bmsy ~ U(0,2), but your prior on K is barely larger than average catch, your "posterior" will say that B/Bmsy is low. 
+  - Not learning though: what happens if K ~ U(0, Inf)?
+
+Is it The shape of the catch history? 
+
+A one way trip down has to mean the stock is probably in worse shape than a climb and then a steady level right?
+
+---
+
+# Where's the Information?
+
+Experiment: 
+  - Fix all priors at the same level
+  
+  - Apply the priors to starkly different catch histories
+  
+  - Compare prior and posterior for each run
+
+
+
+---
+
+
+# Where's the Information?
+
+
+```{r}
+catch_history_plot
+```
+
+---
+
+# Where's the Information?
+.center[*The shape of the catch history on its own does not contain information on stock status*]
+
+```{r}
+catch_status_plot
+```
+
+---
+
+# The Prior Remains the Same
+
+```{r}
+nothing_learned_plot
+```
+
+---
+
+# COMs Don't Learn Stock Status from Catch
+
+- COMs help reveal your implicit priors
+
+- Estimates of stock status are a reflection of assumptions, not "learning"
+
+- Can work just fine if your assumptions are right
+  - Basically, if you can eyeball a surplus production model on your own (r & K), then you'll get the right stock status
+
+
+**Focus then is on prior generation, not "learning" from catch history!!**
+
+---
+
+# What about the heuristics?
+
+If you can't *learn* from catches alone, can you *predict*?
+  - This is the idea underlying empirical approaches like Costello et al. 2012 & the heuristics internal to CMSY
+  
+
+.center[*Looking at stocks where we "know" stock status, can we identify predictable relationships between catches and stock status*]
+
+---
+
+
+# Blood from a Stone
+
+Free et al. 2020: Use simulation testing & RAM stocks to compare performance of a bunch of COMS
+
+```{r}
+knitr::include_graphics(here::here("presentations","imgs","blood-from-stone.png"))
+```
+
+
+---
+
+
+# Unleash the Machines
+
+What if the problem is just that we haven't found the *right* empirical COM?
+- Train random forest to predict B/Bmsy using catch history + life history
+
+```{r}
+com_rf_plot
+```
+
+
+---
+
+# You Can't Always Get What You Want
+
+.pull-left[
+
+The desires for COMS is understandable
+
+Catches of course tell you something about the minimum possible population size
+
+**On their own they do not reliably reveal or predict stock status**
+
+Where next?
+  - Can we augment COMs with other types of data to improve performance?
+  - Not looking promising at macro scale so far... 
+
+].pull-right[
+
+```{r, echo = FALSE, out.width="100%"}
+knitr::include_graphics("https://media.giphy.com/media/q36oyUGLdB1Mk/giphy.gif") 
+```
+
+
+]
+
+---

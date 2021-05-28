@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Catch Only Models</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Dan Ovando" />
+    <meta name="date" content="2020-11-02" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Catch Only Models
+### Dan Ovando
+### Hilborn Lab Meeting
+### 2020-11-02
+
+---
+
+
+
+
+
+
+
+background-image: url(https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.lifewithdogs.tv%2Fwp-content%2Fuploads%2F2016%2F06%2F6.26.16-Bad-Pun-Husky27.jpg&amp;f=1&amp;nofb=1)
+
+# Catch-Only Models: What's the Catch?
+
+
+---
+
+# What's a Catch-Only Model
+
+.center[*A model that seeks to infer something about stock status using only catch data**]
+
+Catch-only models (COMs) gained popularity to fill two needs 
+  - Estimating MSY in US to satisfy regulatory requirements (e.g. [DB-SRA](https://www.sciencedirect.com/science/article/abs/pii/S0165783611001962))
+  - Turning only global fishery database, FAO captures, into estimates of stock status
+  
+We'll focus on the "stock status" side of COMs here
+
+.footnote[*And usually structural assumptions + life history]
+
+---
+
+# COMS for Stock Status
+
+There is a long history (and rationale) for trying to infer stock status from catch history
+  - Under classical open-access dynamics, a build up, peak, then crash of catch probably means overfished
+
+Early efforts started by looking at things like Catch / max(Catch) etc. 
+
+Since then...
+
+  - Empirical approaches (Costello et al. 2012/2016, Thorson et al. 2012)
+  - Structural / Heuristic approaches (e.g. CMSY, SSCOM)
+  - Ensemble approaches (Anderson et al. Superensemble)
+  
+---
+
+
+# Where's the Information?
+
+Regardless of performance, let's think for a moment about where information comes from in a COM
+
+Just about the most foundational equation in stock assessment is
+
+
+`$$q \times biomass = \frac{catch}{effort}$$`
+
+Suppose we observe `\(\frac{catch}{effort}\)`.
+
+What do we need to assume in order for this to be useful for us as index of abundance?
+
+---
+
+
+# Where's the Information?
+
+Now suppose we just observe catch. 
+
+`$$effort \times q \times biomass = catch$$`
+What do we need to assume now?
+
+--
+
+We now need to assume that *effort* and *q* are constant if we want to equate catch to biomass.
+
+How likely is that? 
+
+Yes, I know this is obvious, but it's worth remembering! 
+
+.center[**We need some really restrictive assumptions in order for catch ~ biomass**]
+
+
+---
+
+# Where's the information?
+
+This is pretty obvious so far. That's why most COMs add a wrinkle: they try and estimate stock status based off the characteristics of the entire catch history.
+  - catch / max(catch)
+  - catch history shape
+  
+CMSY is one of the most common forms of this
+  - Define priors on *r*, *k*, initial status, intermediate, and final stock status
+  - Apply catch history + pop model to priors
+  - Reject any combinations of parameters that result in biomass &lt; 0
+    - And do some filtering based on the "triangle".... 
+    
+The claim: you have now learned something from stock status
+
+---
+
+# Where's the information
+
+&lt;img src="/Users/danovan/projects/eval-cmsy/presentations/imgs/cmsy.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Where's the Information
+
+How is the prior on recent stock status getting "updated"?
+
+*K* prior clearly matters: If your prior is that B/Bmsy ~ U(0,2), but your prior on K is barely larger than average catch, your "posterior" will say that B/Bmsy is low. 
+  - Not learning though: what happens if K ~ U(0, Inf)?
+
+Is it The shape of the catch history? 
+
+A one way trip down has to mean the stock is probably in worse shape than a climb and then a steady level right?
+
+---
+
+# Where's the Information?
+
+Experiment: 
+  - Fix all priors at the same level
+  
+  - Apply the priors to starkly different catch histories
+  
+  - Compare prior and posterior for each run
+
+
+
+---
+
+
+# Where's the Information?
+
+
+&lt;img src="coms-hilborn-lab-meeting-nov-2020_files/figure-html/unnamed-chunk-2-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Where's the Information?
+.center[*The shape of the catch history on its own does not contain information on stock status*]
+
+&lt;img src="coms-hilborn-lab-meeting-nov-2020_files/figure-html/unnamed-chunk-3-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# The Prior Remains the Same
+
+&lt;img src="coms-hilborn-lab-meeting-nov-2020_files/figure-html/unnamed-chunk-4-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# COMs Don't Learn Stock Status from Catch
+
+- COMs help reveal your implicit priors
+
+- Estimates of stock status are a reflection of assumptions, not "learning"
+
+- Can work just fine if your assumptions are right
+  - Basically, if you can eyeball a surplus production model on your own (r &amp; K), then you'll get the right stock status
+
+
+**Focus then is on prior generation, not "learning" from catch history!!**
+
+---
+
+# What about the heuristics?
+
+If you can't *learn* from catches alone, can you *predict*?
+  - This is the idea underlying empirical approaches like Costello et al. 2012 &amp; the heuristics internal to CMSY
+  
+
+.center[*Looking at stocks where we "know" stock status, can we identify predictable relationships between catches and stock status*]
+
+---
+
+
+# Blood from a Stone
+
+Free et al. 2020: Use simulation testing &amp; RAM stocks to compare performance of a bunch of COMS
+
+&lt;img src="/Users/danovan/projects/eval-cmsy/presentations/imgs/blood-from-stone.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+
+# Unleash the Machines
+
+What if the problem is just that we haven't found the *right* empirical COM?
+- Train random forest to predict B/Bmsy using catch history + life history
+
+&lt;img src="coms-hilborn-lab-meeting-nov-2020_files/figure-html/unnamed-chunk-6-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# You Can't Always Get What You Want
+
+.pull-left[
+
+The desires for COMS is understandable
+
+Catches of course tell you something about the minimum possible population size
+
+**On their own they do not reliably reveal or predict stock status**
+
+Where next?
+  - Can we augment COMs with other types of data to improve performance?
+  - Not looking promising at macro scale so far... 
+
+].pull-right[
+
+&lt;img src="https://media.giphy.com/media/q36oyUGLdB1Mk/giphy.gif" width="100%" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
