@@ -815,7 +815,7 @@ xgboost_workflow <- workflow() %>%
 #     value ~ c_div_maxc + c_div_meanc + c_roll_meanc + c_roll_maxc + c_init_slope + predicted_cluster + fishery_year)
 
 if (tune_com) {
-  workers <- 1 # for some reason parallel computation is crashing
+  workers <- 4 # for some reason parallel computation is crashing
 
   cl <- makePSOCKcluster(workers)
   #
@@ -837,13 +837,13 @@ if (tune_com) {
   Sys.time() - a
 
 
-  write_rds(xgboost_tuning, file = "com_tunegrid.rds")
+  write_rds(xgboost_tuning, file = file.path(results_path,"com_tunegrid.rds"))
 
   # write_rds(com_tunegrid, file = "com_tunegrid.rds")
 
 } else {
-  xgboost_tuning <- read_rds(file = "com_tunegrid.rds")
 
+  xgboost_tuning <- readr::read_rds(file = file.path(results_path,"com_tunegrid.rds"))
 
 }
 autoplot(xgboost_tuning, metric = "rmse") +
@@ -1076,7 +1076,6 @@ older_com_eval_data %>%
 
 
 # save things -------------------------------------------------------------
-
 
 plots <- ls()[str_detect(ls(), "_plot")]
 
