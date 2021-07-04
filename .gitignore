@@ -51,3 +51,4 @@ data/*
 *.bug
 *.rds
 *.Rdata
+*.png
