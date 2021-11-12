@@ -1,0 +1,35 @@
+---
+title: "Untitled"
+author: "Dan Ovando"
+date: "7/4/2021"
+output: pdf_document
+header-includes:
+  - \usepackage{booktabs}
+---
+
+\begin{tabular}{lr}
+\toprule
+Variable & Importance\\
+\midrule
+Predicted catch cluster = 3 & 0.16\\
+Catch divided by rolling max catch & 0.13\\
+Natural mortality divided by Von Bertalanffy growth coefficient & 0.12\\
+Initial log slope of the catch & 0.10\\
+Catch divided by maximum catch & 0.09\\
+\addlinespace
+Estimate of recruitment process error & 0.07\\
+Sequential fishery year & 0.06\\
+Log of Fmsy divided by natural mortality & 0.06\\
+Catch divided by rolling mean catch & 0.06\\
+Von Bertalanffy asymptotic length divided by length at maturity & 0.04\\
+\addlinespace
+Steepneess & 0.04\\
+Asymptotic weight & 0.03\\
+Asymptotic length & 0.02\\
+Catch divided by mean catch & 0.02\\
+Predicted catch cluster = 4 & 0.00\\
+\addlinespace
+Predicted catch cluster = 1 & 0.00\\
+Predicted catch cluster = 2 & 0.00\\
+\bottomrule
+\end{tabular}
