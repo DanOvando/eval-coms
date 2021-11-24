@@ -367,8 +367,9 @@ fit_example <-
         growth_rate_prior_cv = growth_rate_prior_cv
       )
 
-    # plot_driors(com_driors)
+    # browser()
 
+    # plot_driors(com_driors)
 
 
     com_fit <-
@@ -376,7 +377,7 @@ fit_example <-
         driors = com_driors,
         include_fit = TRUE,
         engine = "sir",
-        draws = 1e6,
+        draws = 5e6,
         tune_prior_predictive = FALSE
       )
 
@@ -459,7 +460,7 @@ fit_example <-
 
 catch_histories <- catch_histories %>%
   mutate(
-    com_fits = map(catches, fit_example, kmult = 5, k_prior_cv = 5),
+    com_fits = map(catches, fit_example, kmult = 5, k_prior_cv = 1,terminal_state_cv =.25),
     com_fits_unif = map(
       catches,
       fit_example,
@@ -473,13 +474,21 @@ catch_histories <- catch_histories %>%
       catches,
       fit_example,
       terminal_state = 0.75,
-      terminal_state_cv = .2
+      terminal_state_cv = .25
     ),
     com_fits_lower = map(
       catches,
       fit_example,
       terminal_state = 0.1,
-      terminal_state_cv = 2
+      terminal_state_cv = .25
+    ),
+    com_fits_lowerer = map(
+      catches,
+      fit_example,
+      terminal_state = 0.5,
+      kmult = 1.5,
+      k_prior_cv = 0.25,
+      terminal_state_cv = .25
     )
   )
 
@@ -546,7 +555,7 @@ cluster_plot <- ram_catches %>%
   scale_y_continuous(name = "Centered and Scaled Catches") +
   theme_minimal()
 
-ggsave(filename = file.path(results_path,"fig_s1.pdf"),cluster_plot,dev = cairo_pdf, width = 180,height = 120, units = "mm")
+ggsave(filename = file.path(results_path,"fig_s1.png"),cluster_plot, width = 180,height = 120, units = "mm")
 
 
 
@@ -834,8 +843,15 @@ if (tune_com) {
   xgboost_tuning <- readr::read_rds(file = file.path(results_path,"com_tunegrid.rds"))
 
 }
-autoplot(xgboost_tuning, metric = "rmse") +
+
+tuning_plot =autoplot(xgboost_tuning, metric = "rmse") +
   scale_y_continuous(limits = c(NA, 1))
+
+ggsave(filename = file.path(results_path, "fig_S5.png"),
+       tuning_plot,
+       width = 180,
+       height = 110,
+       units = "mm")
 
 best_vals <- tune::select_best(xgboost_tuning, metric = "rmse")
 
@@ -995,17 +1011,16 @@ com_rf_plot <- com_eval_data %>%
     guide = guide_colorbar(
       frame.colour = "black",
       ticks.colour = "black",
-      barheight = unit(20, "lines")
+      barheight = unit(15, "lines")
     )
   )
 
 com_rf_plot
 
-ggsave(filename = file.path(results_path, "fig_4.pdf"),
+ggsave(filename = file.path(results_path, "fig_4.png"),
        com_rf_plot,
-       dev = cairo_pdf,
        width = 180,
-       height = 120,
+       height = 110,
        units = "mm")
 
 
@@ -1119,7 +1134,7 @@ older_com_rf_plot <- older_com_eval_data %>%
   )) +
   ggtext::geom_richtext(data = older_com_rmse, aes(
     x = 1,
-    y = 2.75,
+    y = 3.75,
     label = paste0("RMSE = ", round(.estimate, 2))
   )) +
   facet_wrap( ~ split) +
@@ -1134,6 +1149,13 @@ older_com_rf_plot <- older_com_eval_data %>%
     )
   )
 older_com_rf_plot
+
+ggsave(filename = file.path(results_path, "fig_4old.png"),
+       older_com_rf_plot,
+       width = 180,
+       height = 110,
+       units = "mm")
+
 
 older_com_eval_data %>%
   group_by(split) %>%
@@ -1203,7 +1225,7 @@ g <- ggplot(data, aes(x=year, y=proportion, fill=status)) +
 g
 
 # Export
-ggsave(g, filename=file.path(results_path, "FigX_saup_stock_status_plot.pdf"),
+ggsave(g, filename=file.path(results_path, "fig_1_saup_stock_status_plot.png"),
        width=6.5, height=2.5, units="in", dpi=600)
 
 
@@ -1425,7 +1447,7 @@ g <- gridExtra::grid.arrange(g1, g2, g3, g4, ncol=2, heights=c(0.6, 0.4))
 g
 
 # Export figure
-ggsave(g, filename=file.path(results_path, "FigX_cmsy_prior_performance.pdf"),
+ggsave(g, filename=file.path(results_path, "fig_3_cmsy_prior_performance.png"),
        width=6.5, height=5.5, units="in", dpi=600)
 
 # save things -------------------------------------------------------------

@@ -23,7 +23,7 @@ Log of Fmsy divided by natural mortality & 0.06\\
 Catch divided by rolling mean catch & 0.06\\
 Von Bertalanffy asymptotic length divided by length at maturity & 0.04\\
 \addlinespace
-Steepneess & 0.04\\
+Steepness & 0.04\\
 Asymptotic weight & 0.03\\
 Asymptotic length & 0.02\\
 Catch divided by mean catch & 0.02\\

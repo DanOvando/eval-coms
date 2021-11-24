@@ -67,9 +67,8 @@ make_nothing_learned_plot <- function(plot_col, catch_histories) {
     plot_annotation(tag_levels = 'A')
 
   ggsave(
-    filename = file.path(results_path, paste0("fig_2_", plot_col, ".pdf")),
+    filename = file.path(results_path, paste0("fig_2_", plot_col, ".png")),
     catch_and_nothing_plot,
-    dev = cairo_pdf,
     width = 180,
     height = 100,
     units = "mm",
