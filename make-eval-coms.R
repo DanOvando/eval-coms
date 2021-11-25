@@ -332,7 +332,6 @@ catch_histories <-
   mutate(catches = map(form, make_catches))
 
 
-# stop()
 fit_example <-
   function(catches,
            initial_state = 1,
@@ -340,7 +339,15 @@ fit_example <-
            middle_state = 0.4,
            middle_state_cv = 0.2,
            terminal_state = 0.2,
-           terminal_state_cv = 0.2) {
+           terminal_state_cv = .2,
+           kmult = NA,
+           k_prior_cv = 1,
+           growth_rate_prior = NA,
+           growth_rate_prior_cv = 0.25) {
+
+
+    k_prior <- kmult * max(catches$catch)
+
     com_driors <-
       format_driors(
         catch = catches$catch,
@@ -350,20 +357,27 @@ fit_example <-
         initial_state_cv = initial_state_cv,
         terminal_state = terminal_state,
         terminal_state_cv = terminal_state_cv,
+        k_prior = k_prior,
+        k_prior_cv = k_prior_cv,
         b_ref_type = "k",
         use_catch_prior = FALSE,
         taxa = "Gadus morhua",
-        shape_prior_source = "thorson"
+        shape_prior_source = "thorson",
+        growth_rate_prior = growth_rate_prior,
+        growth_rate_prior_cv = growth_rate_prior_cv
       )
 
+    # browser()
+
     # plot_driors(com_driors)
+
 
     com_fit <-
       fit_sraplus(
         driors = com_driors,
         include_fit = TRUE,
         engine = "sir",
-        draws = 1e6,
+        draws = 5e6,
         tune_prior_predictive = FALSE
       )
 
@@ -445,70 +459,44 @@ fit_example <-
 
 
 catch_histories <- catch_histories %>%
-  mutate(com_fits = map(catches, fit_example))
+  mutate(
+    com_fits = map(catches, fit_example, kmult = 5, k_prior_cv = 1,terminal_state_cv =.25),
+    com_fits_unif = map(
+      catches,
+      fit_example,
+      terminal_state = 0.5,
+      terminal_state_cv = 1,
+      kmult = 25,
+      k_prior_cv = 1,
+      growth_rate_prior_cv = 1
+    ),
+    com_fits_higher = map(
+      catches,
+      fit_example,
+      terminal_state = 0.75,
+      terminal_state_cv = .25
+    ),
+    com_fits_lower = map(
+      catches,
+      fit_example,
+      terminal_state = 0.1,
+      terminal_state_cv = .25
+    ),
+    com_fits_lowerer = map(
+      catches,
+      fit_example,
+      terminal_state = 0.5,
+      kmult = 1.5,
+      k_prior_cv = 0.25,
+      terminal_state_cv = .25
+    )
+  )
 
 
-catch_history_plot <- catch_histories %>%
-  select(form, catches) %>%
-  unnest(cols = catches) %>%
-  ggplot(aes(year, catch)) +
-  geom_line() +
-  facet_wrap( ~ form)
-
-catches <- catch_histories %>%
-  select(form, catches) %>%
-  unnest(cols = catches)
-
-catch_status_plot <- catch_histories %>%
-  select(-catches) %>%
-  unnest(cols = com_fits) %>%
-  group_by(form, year) %>%
-  mutate(value = mean(value)) %>%
-  group_by(form) %>%
-  mutate(value = value / max(value)) %>%
-  left_join(catches, by  = c("form", "year")) %>%
-  select(form, year, value, catch) %>%
-  rename(`Mean Estimated B/K` = value, Catch = catch) %>%
-  pivot_longer(c(`Mean Estimated B/K`, Catch),
-               names_to = "type",
-               values_to = "value") %>%
-  group_by(form , type) %>%
-  mutate(value = value / max(value)) %>%
-  ggplot(aes(year, value, linetype = type)) +
-  geom_line(alpha = 0.75) +
-  facet_wrap( ~ form) +
-  # scale_color_discrete(name = '') +
-  scale_x_continuous(name = "Year", guide = guide_axis(n.dodge = 2)) +
-  scale_y_continuous(name = "") +
-  theme_classic(base_size = 14) +
-  theme(legend.position = "top",
-        panel.grid.minor = element_blank()) +
-  scale_linetype(name = '')
-
-
-
-nothing_learned_plot <- catch_histories %>%
-  unnest(cols = com_fits) %>%
-  group_by(form) %>%
-  filter(year == max(year)) %>%
-  select(form, value, prior) %>%
-  rename(posterior = value) %>%
-  pivot_longer(-form, names_to = "type", values_to = "value") %>%
-  ggplot(aes(value, fill = type)) +
-  geom_density(alpha = 0.75) +
-  facet_wrap( ~ form) +
-  scale_x_continuous(name = "Final B/K", guide = guide_axis(n.dodge = 2)) +
-  scale_y_continuous(name = "Density") +
-  scale_fill_manual(
-    labels = c("Posterior", "Prior"),
-    name = '',
-    values = c("lightgrey", "darkgrey")
-  ) +
-  theme_classic(base_size = 14) +
-  theme(legend.position = "top")
-
-catch_and_nothing_plot <- catch_status_plot + nothing_learned_plot +
-  plot_annotation(tag_levels = 'A')
+com_fits_plots <-
+  map(names(catch_histories)[str_detect(names(catch_histories), "_fits")],
+      make_nothing_learned_plot,
+      catch_histories = catch_histories)
 
 
 # train machine learning model to predict catches -------------------------
@@ -559,10 +547,19 @@ ram_catches <- ram_catches  %>%
                values_to = "catch",) %>%
   mutate(stock_year = as.integer(stock_year))
 
-ram_catches %>%
+cluster_plot <- ram_catches %>%
   ggplot(aes(stock_year, catch, group = stockid)) +
-  geom_line() +
-  facet_wrap( ~ cluster)
+  geom_line(alpha = 0.1) +
+  facet_wrap( ~ cluster) +
+  scale_x_continuous(name = "Stock Year") +
+  scale_y_continuous(name = "Centered and Scaled Catches") +
+  theme_minimal()
+
+ggsave(filename = file.path(results_path,"fig_s1.png"),cluster_plot, width = 180,height = 120, units = "mm")
+
+
+
+
 
 cluster_data <- ram_catches %>%
   pivot_wider(names_from = stock_year, values_from = catch) %>%
@@ -846,8 +843,15 @@ if (tune_com) {
   xgboost_tuning <- readr::read_rds(file = file.path(results_path,"com_tunegrid.rds"))
 
 }
-autoplot(xgboost_tuning, metric = "rmse") +
+
+tuning_plot =autoplot(xgboost_tuning, metric = "rmse") +
   scale_y_continuous(limits = c(NA, 1))
+
+ggsave(filename = file.path(results_path, "fig_S5.png"),
+       tuning_plot,
+       width = 180,
+       height = 110,
+       units = "mm")
 
 best_vals <- tune::select_best(xgboost_tuning, metric = "rmse")
 
@@ -863,26 +867,84 @@ com_model <- com_workflow %>%
 
 vip(com_model$fit$fit$fit)
 
+vi_values <- vi(com_model$fit$fit$fit)
+
+
+bad_var_name <-
+  c(
+    "predicted_cluster3",
+    "c_roll_maxc",
+    "m_v_k",
+    "c_init_slope",
+    "c_div_maxc" ,
+    "ln_var",
+    "fishery_year"  ,
+    "ln_fmsy_over_m",
+    "c_roll_meanc" ,
+    "linf_v_lmat"  ,
+    "h"    ,
+    "winfinity"   ,
+    "loo"   ,
+    "c_div_meanc"    ,
+    "predicted_cluster4",
+    "predicted_cluster1",
+    "predicted_cluster2"
+  )
+
+good_var_name <-
+  c(
+    "Predicted catch cluster = 3",
+    "Catch divided by rolling max catch",
+    "Natural mortality divided by Von Bertalanffy growth coefficient",
+    "Initial log slope of the catch",
+    "Catch divided by maximum catch",
+    "Estimate of recruitment process error",
+    "Sequential fishery year",
+    "Log of Fmsy divided by natural mortality",
+    "Catch divided by rolling mean catch",
+    "Von Bertalanffy asymptotic length divided by length at maturity",
+    "Steepneess",
+    "Asymptotic weight",
+    "Asymptotic length",
+    "Catch divided by mean catch",
+    "Predicted catch cluster = 4",
+    "Predicted catch cluster = 1",
+    "Predicted catch cluster = 2"
+  )
+
+vi_names <- tibble(Variable = vi_values$Variable,name = good_var_name)
+
+vi_table <- vi_values %>%
+  left_join(vi_names, by = "Variable") %>%
+  select(-Variable) %>%
+  rename(Variable = name) %>%
+  mutate(Importance = round(Importance,2)) %>%
+  select(Variable, Importance)
+
+  knitr::kable(vi_table, format = "latex", booktabs = TRUE)
+
+
 # fit to LOO sample
 
 
-if (run_loo) {
-  loo_test <- training_data %>%
-    rsample::group_vfold_cv(group = "stockid") %>%
-    mutate(fit = map(splits,  ~ fit(com_workflow, analysis(.x))))
 
-  loo_test <- loo_test %>%
-    mutate(pred = map2(fit, splits, ~ cbind(
-      assessment(.y), predict(.x, new_data = assessment(.y))
-    )))
+  if (run_loo == TRUE) {
+    loo_test <- training_data %>%
+      rsample::group_vfold_cv(group = "stockid") %>%
+      mutate(fit = map(splits,  ~ fit(com_workflow, analysis(.x))))
 
-  write_rds(loo_test %>% select(-fit),
-            file = file.path(results_path, "loo_test.rds"))
+    loo_test <- loo_test %>%
+      mutate(pred = map2(fit, splits, ~ cbind(
+        assessment(.y), predict(.x, new_data = assessment(.y))
+      )))
 
-} else {
-  loo_test <- read_rds(file.path(results_path, "loo_test.rds"))
+    write_rds(loo_test %>% select(-fit),
+              file = file.path(results_path, "loo_test.rds"))
 
-}
+  } else {
+    loo_test <- read_rds(file.path(results_path, "loo_test.rds"))
+
+  }
 
 loo_results <- loo_test %>%
   select(pred) %>%
@@ -901,9 +963,9 @@ com_eval_data <- training_data %>%
   mutate(split = "Training") %>%
   rbind(testing_data %>%
           cbind(predict(com_model, new_data =  testing_data)) %>%
-          mutate(split = "Testing")) %>%
+          mutate(split = "New Countries")) %>%
   rbind(loo_results) %>%
-  mutate(split = fct_relevel(split, c("Training", "Leave-One-Out", "Testing")))
+  mutate(split = fct_relevel(split, c("Training", "Leave-One-Out", "New Countries")))
 
 com_rsq <- com_eval_data %>%
   group_by(split) %>%
@@ -921,8 +983,6 @@ com_eval_data %>%
   group_by(split) %>%
   yardstick::mae(truth = value, estimate = .pred)
 
-
-
 com_rf_plot <- com_eval_data %>%
   ungroup() %>%
   group_by(stockid) %>%
@@ -934,15 +994,15 @@ com_rf_plot <- com_eval_data %>%
   geom_bin2d(alpha = 0.8, aes(fill = after_stat(density))) +
   geom_smooth(method = "lm", color = "red", se = FALSE) +
   ggtext::geom_richtext(data = com_rsq, aes(
-    x = 1,
+    x = 1.5,
     y = 3,
     label = paste0("R<sup>2</sup> = ", round(.estimate, 2))
-  )) +
+  ),alpha = 0.9) +
   ggtext::geom_richtext(data = com_rmse, aes(
-    x = 1,
+    x = 1.5,
     y = 2.75,
     label = paste0("RMSE = ", round(.estimate, 2))
-  )) +
+  ),alpha = 0.9) +
   facet_wrap( ~ split) +
   scale_x_continuous(name = "RLSADB B/Bmsy", limits = c(0, NA)) +
   scale_y_continuous(name = "Predicted B/Bmsy", limits = c(0, NA)) +
@@ -951,11 +1011,36 @@ com_rf_plot <- com_eval_data %>%
     guide = guide_colorbar(
       frame.colour = "black",
       ticks.colour = "black",
-      barheight = unit(27, "lines")
+      barheight = unit(15, "lines")
     )
   )
 
 com_rf_plot
+
+ggsave(filename = file.path(results_path, "fig_4.png"),
+       com_rf_plot,
+       width = 180,
+       height = 110,
+       dpi = 600,
+       units = "mm")
+
+
+com_rf_plot2 <- com_rf_plot +
+  scale_x_continuous(name = "Observed") +
+  scale_y_continuous(name = "Predicted") +
+  scale_fill_viridis_c(
+    name = "Density of Predictions",
+    guide = guide_colorbar(
+      frame.colour = "black",
+      ticks.colour = "black",
+      barwidth = unit(20, "lines")
+    )
+  ) +
+  labs(caption = "Black dashed line is 1:1, Red line is mean observed vs. predicted") +
+  theme(legend.position = "top")
+
+
+
 
 com_eval_data %>%
   group_by(split) %>%
@@ -1050,7 +1135,7 @@ older_com_rf_plot <- older_com_eval_data %>%
   )) +
   ggtext::geom_richtext(data = older_com_rmse, aes(
     x = 1,
-    y = 2.75,
+    y = 3.75,
     label = paste0("RMSE = ", round(.estimate, 2))
   )) +
   facet_wrap( ~ split) +
@@ -1061,10 +1146,17 @@ older_com_rf_plot <- older_com_eval_data %>%
     guide = guide_colorbar(
       frame.colour = "black",
       ticks.colour = "black",
-      barheight = unit(27, "lines")
+      barheight = unit(17, "lines")
     )
   )
 older_com_rf_plot
+
+ggsave(filename = file.path(results_path, "fig_4old.png"),
+       older_com_rf_plot,
+       width = 180,
+       height = 110,
+       units = "mm")
+
 
 older_com_eval_data %>%
   group_by(split) %>%
@@ -1134,7 +1226,7 @@ g <- ggplot(data, aes(x=year, y=proportion, fill=status)) +
 g
 
 # Export
-ggsave(g, filename=file.path(results_path, "FigX_saup_stock_status_plot.png"),
+ggsave(g, filename=file.path(results_path, "fig_1_saup_stock_status_plot.png"),
        width=6.5, height=2.5, units="in", dpi=600)
 
 
@@ -1356,7 +1448,7 @@ g <- gridExtra::grid.arrange(g1, g2, g3, g4, ncol=2, heights=c(0.6, 0.4))
 g
 
 # Export figure
-ggsave(g, filename=file.path(results_path, "FigX_cmsy_prior_performance.png"),
+ggsave(g, filename=file.path(results_path, "fig_3_cmsy_prior_performance.png"),
        width=6.5, height=5.5, units="in", dpi=600)
 
 # save things -------------------------------------------------------------
