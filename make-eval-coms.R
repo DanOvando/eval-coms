@@ -1021,6 +1021,7 @@ ggsave(filename = file.path(results_path, "fig_4.png"),
        com_rf_plot,
        width = 180,
        height = 110,
+       dpi = 600,
        units = "mm")
 
 
@@ -1145,7 +1146,7 @@ older_com_rf_plot <- older_com_eval_data %>%
     guide = guide_colorbar(
       frame.colour = "black",
       ticks.colour = "black",
-      barheight = unit(27, "lines")
+      barheight = unit(17, "lines")
     )
   )
 older_com_rf_plot
